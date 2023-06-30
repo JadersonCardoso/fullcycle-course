@@ -1,0 +1,50 @@
+version: '3'
+services:
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    image: jadersonbrandao/nginx-desafio:prod
+    container_name: nginx-desafio
+    ports:
+      - "8080:80"
+    depends_on:
+      - node
+    networks:
+      - node-network  
+
+  mysql:
+    image: mysql:5.7
+    command: --innodb-use-native-aio=0
+    container_name: db_desafio
+    tty: true
+    volumes:
+      - ./mysql:/var/lib/mysql
+    environment:
+      - MYSQL_DATABASE=nodedb
+      - MYSQL_ROOT_PASSWORD=root
+    networks: 
+      - node-network
+
+  node:
+    build:
+      context: ./node
+      dockerfile: Dockerfile
+    image: jadersonbrandao/node-desafio:prod
+    container_name: node-desafio
+    ports:
+      - "3000:3000"
+    entrypoint: wait-for mysql:3306 -t 40 -- ./start.sh
+    networks:
+      - node-network  
+    depends_on:
+      - mysql
+    environment:
+      MYSQL_HOST: mysql
+      MYSQL_USER: root
+      MYSQL_PASSWORD: root
+      MYSQL_DATABASE: nodedb
+
+networks:
+  node-network:
+    driver: bridge      
